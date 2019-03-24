@@ -1,17 +1,11 @@
-import os
-import math
-import random
 import sys
 import numpy as np
 import tensorflow as tf
-import cv2
-from time import time 
 
-slim = tf.contrib.slim
-
-# The following line is specific to the SSD install path on your machine
 # clone the repo from; https://github.com/balancap/SSD-Tensorflow
 SSD_HOME = '/home/smc/SSD-Tensorflow'
+# SSD_HOME = 'modules/SSD-Tensorflow'
+
 sys.path.insert(0, SSD_HOME)
 from ssd_nets import ssd_vgg_512, ssd_common, np_methods
 from preprocessing import ssd_vgg_preprocessing
@@ -19,12 +13,31 @@ from preprocessing import ssd_vgg_preprocessing
 # Place your downloaded ckpt under "checkpoints/"
 SSD_CKPT = 'checkpoints/SSD_512x512_ft_iter_120000.ckpt/VGG_VOC0712_SSD_512x512_ft_iter_120000.ckpt'
 
-SSD_THRES = 0.3
+SSD_THRES = 0.4
 SSD_NMS = 0.45
 SSD_NET_SHAPE = (512, 512)
+SSD_PEOPLE_LABEL = 15
 
+'''
+Input: {'img':img_np_array, 'meta':{'frame_id':frame_id}}
 
+Output: {'img': img_np_array, 
+        'meta':{
+                'frame_id': frame_id, 
+                'obj':[{
+                        'box': [x0,y0,x1,y1],
+                        'label': label,
+                        'conf': conf_score
+                        }]
+                }
+        }
+'''
 class SSD:
+    rclasses = []
+    rbboxes = []
+    rscores = []
+    input = {}
+
     def Setup(self):
         self.ckpt = SSD_CKPT
         self.thres = SSD_THRES  
@@ -47,6 +60,7 @@ class SSD:
 
         reuse = True if 'ssd_net' in locals() else None
         ssd_net = ssd_vgg_512.SSDNet()
+        slim = tf.contrib.slim
         with slim.arg_scope(ssd_net.arg_scope(data_format=data_format)):
             predictions, localisations, _, _ = ssd_net.net(self.image_4d, is_training=False, reuse=reuse)
 
@@ -63,45 +77,54 @@ class SSD:
 
 
     def PreProcess(self, input):
-        pass
+        self.input = input 
+
 
     def Apply(self):
-        rimg, rpredictions, rlocalisations, rbbox_img = self.isess.run([self.image_4d, self.pred, self.loc, self.bbx],
-                                                                feed_dict={self.img_input: img})
+        if not self.input:
+            return 
 
-        rclasses, rscores, rbboxes = np_methods.ssd_bboxes_select(
+        rimg, rpredictions, rlocalisations, rbbox_img = self.isess.run([self.image_4d, self.pred, self.loc, self.bbx],
+                                                                feed_dict={self.img_input: self.input['img']})
+
+        self.rclasses, self.rscores, self.rbboxes = np_methods.ssd_bboxes_select(
                 rpredictions, rlocalisations, self.ssd_anchors,
                 select_threshold=self.thres, img_shape=self.net_shape, num_classes=self.total_classes, decode=True)
     
-        rbboxes = np_methods.bboxes_clip(rbbox_img, rbboxes)
-        rclasses, rscores, rbboxes = np_methods.bboxes_sort(rclasses, rscores, rbboxes, top_k=400)
-        rclasses, rscores, rbboxes = np_methods.bboxes_nms(rclasses, rscores, rbboxes, nms_threshold=self.nms_thres)
-        rbboxes = np_methods.bboxes_resize(rbbox_img, rbboxes)
-        return rclasses, rscores, rbboxes
-        
+        self.rbboxes = np_methods.bboxes_clip(rbbox_img, self.rbboxes)
+        self.rclasses, self.rscores, self.rbboxes = np_methods.bboxes_sort(self.rclasses, self.rscores, self.rbboxes, top_k=400)
+        self.rclasses, self.rscores, self.rbboxes = np_methods.bboxes_nms(self.rclasses, self.rscores, self.rbboxes, nms_threshold=self.nms_thres)
+        self.rbboxes = np_methods.bboxes_resize(rbbox_img, self.rbboxes)
+
 
     def PostProcess(self):
-        pass
+        output = self.input
+        if not self.input:
+            return output
+
+        output['meta']['obj'] = []
+        shape = self.input['img'].shape
+        for i in xrange(self.rbboxes.shape[0]):
+            if self.rclasses[i] != SSD_PEOPLE_LABEL:
+                continue 
+            bbox = self.rbboxes[i]
+            p1 = (int(bbox[0] * shape[0]), int(bbox[1] * shape[1]))
+            p2 = (int(bbox[2] * shape[0]), int(bbox[3] * shape[1]))
+            output['meta']['obj'].append({'box':[p1[0],p1[1],p2[0],p2[1]], 'conf': self.rscores[i], 'label':self.rclasses[i]})
+        return output 
 
 
     def log(self, s):
         print('[SSD] %s')
 
 
+''' UNIT TEST '''
 if __name__ == '__main__':
-    args = {'ssd_home': '/home/smc/SSD-Tensorflow',
-            'ssd_ckpt': '/home/smc/models/SSD_512x512_ft_iter_120000.ckpt/VGG_VOC0712_SSD_512x512_ft_iter_120000.ckpt',
-            'ssd_thres': 0.2,
-            'ssd_nms': 0.45,
-            'ssd_net_shape': (300,300),
-            }
-
-    ssd = SSD(args)
-
-    img = cv2.imread(sys.argv[1])
-    cur_time = time()
-    for i in range(50):
-        rclasses, rscores, rbboxes =  ssd.detect_frame(img)
-    print('total time %f' % ((time() - cur_time) / 50.))
-    
-    visualization.plt_bboxes(img, rclasses, rscores, rbboxes)
+    ssd = SSD()
+    ssd.Setup()
+    import cv2
+    img = cv2.imread(sys.argv[1]) # read an image as the input 
+    data = {'img':img, 'meta':1}
+    ssd.PreProcess(data)
+    ssd.Apply()
+    print(ssd.PostProcess()['meta'])

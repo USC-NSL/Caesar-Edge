@@ -1,0 +1,6 @@
+[submodule "modules/SSD-Tensorflow"]
+	path = modules/SSD-Tensorflow
+	url = https://github.com/balancap/SSD-Tensorflow.git
+[submodule "modules/deep_sort"]
+	path = modules/deep_sort
+	url = https://github.com/nwojke/deep_sort.git

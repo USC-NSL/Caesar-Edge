@@ -50,4 +50,4 @@ while(True):
     action_detector.Apply()
     action_data = action_detector.PostProcess()
 
-    print(action_data)
+    print(action_data['meta'])
