@@ -1,11 +1,17 @@
 # Darkflow should be installed from: https://github.com/thtrieu/darkflow
 from darkflow.net.build import TFNet
 import numpy as np
+from time import time 
+from modules.data_reader import DataReader
+from modules.data_writer import DataWriter
+from os.path import join 
+import os 
 
 # Place your downloaded cfg and weights under "checkpoints/"
-YOLO_CONFIG = 'checkpoints/yolo_cfg'
-YOLO_MODEL = 'checkpoints/yolo_cfg/yolo.cfg'
-YOLO_WEIGHTS = 'checkpoints/yolo.weights'
+YOLO_CONFIG = join(os.getcwd(),'checkpoints/yolo_cfg')
+YOLO_MODEL = join(os.getcwd(),'checkpoints/yolo_cfg/yolo.cfg')
+YOLO_WEIGHTS = join(os.getcwd(),'checkpoints/yolo.weights')
+
 GPU_ID = 0
 GPU_UTIL = 0.5
 YOLO_THRES = 0.4
@@ -59,8 +65,8 @@ class YOLO:
         for d in self.dets:
             if d['label'] != YOLO_PEOPLE_LABEL:
                 continue 
-            self.output['meta']['obj'].append({'box':[int(d['topleft']['x']), int(d['topleft']['y']),
-                                                    int(d['bottomright']['x']), int(d['bottomright']['y'])],
+            output['meta']['obj'].append({'box':[int(d['topleft']['x']), int(d['topleft']['y']),
+                                                int(d['bottomright']['x']), int(d['bottomright']['y'])],
                                                 'label': d['label'],
                                                 'conf': d['confidence']})
         return output
@@ -74,9 +80,27 @@ class YOLO:
 if __name__ == '__main__':
     yolo = YOLO()
     yolo.Setup()
-    import cv2
-    img = cv2.imread(sys.argv[1]) # read an image as the input 
-    data = {'img':img, 'meta':1}
-    yolo.PreProcess(data)
-    yolo.Apply()
-    print(yolo.PostProcess()['meta'])
+
+    dr = DataReader()
+    dr.Setup('test/video.mp4')
+
+    dw = DataWriter()
+    dw.Setup('obj_det_res.npy')
+
+    cur_time = time()
+    cnt = 0 
+    while True:
+        d = dr.PostProcess()
+        print(cnt)
+        if not d:
+            break 
+        yolo.PreProcess(d)
+        yolo.Apply()
+        objs = yolo.PostProcess()
+        dw.PreProcess(objs['meta'])
+        cnt += 1
+
+    print('FPS: %.1f' % (float(cnt) / float(time() - cur_time)))
+    
+    dw.save()
+    print('done')

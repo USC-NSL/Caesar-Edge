@@ -1,17 +1,19 @@
 import sys
 import numpy as np
 import tensorflow as tf
-
-# clone the repo from; https://github.com/balancap/SSD-Tensorflow
-SSD_HOME = '/home/smc/SSD-Tensorflow'
-# SSD_HOME = 'modules/SSD-Tensorflow'
-
-sys.path.insert(0, SSD_HOME)
-from ssd_nets import ssd_vgg_512, ssd_common, np_methods
-from preprocessing import ssd_vgg_preprocessing
+from time import time 
+from modules.data_reader import DataReader
+from modules.data_writer import DataWriter
+from os.path import join 
+import os 
 
 # Place your downloaded ckpt under "checkpoints/"
-SSD_CKPT = 'checkpoints/SSD_512x512_ft_iter_120000.ckpt/VGG_VOC0712_SSD_512x512_ft_iter_120000.ckpt'
+SSD_CKPT = join(os.getcwd(), 'checkpoints/VGG_VOC0712_SSD_512x512_ft_iter_120000.ckpt')
+
+SSD_HOME = join(os.getcwd(), 'modules/SSD-Tensorflow') 
+sys.path.insert(0, SSD_HOME)
+from nets import ssd_vgg_512, ssd_common, np_methods
+from preprocessing import ssd_vgg_preprocessing
 
 SSD_THRES = 0.4
 SSD_NMS = 0.45
@@ -53,7 +55,8 @@ class SSD:
         self.img_input = tf.placeholder(tf.uint8, shape=(None, None, 3))
 
         image_pre, labels_pre, bboxes_pre, bbox_img = ssd_vgg_preprocessing.preprocess_for_eval(
-            self.img_input, None, None, self.net_shape, data_format, resize=ssd_vgg_preprocessing.Resize.WARP_RESIZE)
+                                        self.img_input, None, None, self.net_shape, data_format, 
+                                        resize=ssd_vgg_preprocessing.Resize.WARP_RESIZE)
         
         self.image_4d = tf.expand_dims(image_pre, 0)
         self.bbx = bbox_img
@@ -92,8 +95,10 @@ class SSD:
                 select_threshold=self.thres, img_shape=self.net_shape, num_classes=self.total_classes, decode=True)
     
         self.rbboxes = np_methods.bboxes_clip(rbbox_img, self.rbboxes)
-        self.rclasses, self.rscores, self.rbboxes = np_methods.bboxes_sort(self.rclasses, self.rscores, self.rbboxes, top_k=400)
-        self.rclasses, self.rscores, self.rbboxes = np_methods.bboxes_nms(self.rclasses, self.rscores, self.rbboxes, nms_threshold=self.nms_thres)
+        self.rclasses, self.rscores, self.rbboxes = np_methods.bboxes_sort(self.rclasses, self.rscores, 
+                                                                        self.rbboxes, top_k=400)
+        self.rclasses, self.rscores, self.rbboxes = np_methods.bboxes_nms(self.rclasses, self.rscores, 
+                                                                        self.rbboxes, nms_threshold=self.nms_thres)
         self.rbboxes = np_methods.bboxes_resize(rbbox_img, self.rbboxes)
 
 
@@ -110,21 +115,40 @@ class SSD:
             bbox = self.rbboxes[i]
             p1 = (int(bbox[0] * shape[0]), int(bbox[1] * shape[1]))
             p2 = (int(bbox[2] * shape[0]), int(bbox[3] * shape[1]))
-            output['meta']['obj'].append({'box':[p1[0],p1[1],p2[0],p2[1]], 'conf': self.rscores[i], 'label':self.rclasses[i]})
+            output['meta']['obj'].append({'box':[p1[0],p1[1],p2[0],p2[1]], 'conf': self.rscores[i], 
+                                                                            'label':self.rclasses[i]})
         return output 
 
 
     def log(self, s):
-        print('[SSD] %s')
+        print('[SSD] %s' % s)
 
 
 ''' UNIT TEST '''
 if __name__ == '__main__':
     ssd = SSD()
     ssd.Setup()
-    import cv2
-    img = cv2.imread(sys.argv[1]) # read an image as the input 
-    data = {'img':img, 'meta':1}
-    ssd.PreProcess(data)
-    ssd.Apply()
-    print(ssd.PostProcess()['meta'])
+
+    dr = DataReader()
+    dr.Setup('test/video.mp4')
+
+    dw = DataWriter()
+    dw.Setup('obj_det_res.npy')
+
+    cur_time = time()
+    cnt = 0 
+    while True:
+        d = dr.PostProcess()
+        print(cnt)
+        if not d:
+            break 
+        ssd.PreProcess(d)
+        ssd.Apply()
+        objs = ssd.PostProcess()
+        dw.PreProcess(objs['meta'])
+        cnt += 1
+
+    print('FPS: %.1f' % (float(cnt) / float(time() - cur_time)))
+    
+    dw.save()
+    print('done')

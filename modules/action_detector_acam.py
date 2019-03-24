@@ -1,14 +1,15 @@
 import modules.acam.action_detector as act
-from modules.manage_tube import TubeManager
+from modules.acam.manage_tube import TubeManager
 import sys 
 import numpy as np 
-
+from os.path import join 
+import os 
 # Download the model file to 'checkpoints/'
-ACAM_MODEL = 'checkpoints/model_ckpt_soft_attn_pooled_cosine_drop_ava-130'
+ACAM_MODEL = join(os.getcwd(),'checkpoints/model_ckpt_soft_attn_pooled_cosine_drop_ava-130')
 
 # These two numbers should be same as your video input 
-VIDEO_WID = 1280    
-VIDEO_HEI = 720 
+VIDEO_WID = 1920    
+VIDEO_HEI = 1080
 
 '''
 Input: {'img': img_np_array, 
@@ -39,7 +40,7 @@ class ACAM:
     def Setup(self):
         self.act_detector = act.Action_Detector('soft_attn')
         self.action_freq = 16           # update the act result every 16 frames 
-        memory_size = self.act_detector.timesteps - action_freq         # 32 - 16
+        memory_size = self.act_detector.timesteps - self.action_freq         # 32 - 16
 
         self.updated_frames, self.temporal_rois, self.temporal_roi_batch_indices, cropped_frames = \
                     self.act_detector.crop_tubes_in_tf_with_memory([self.act_detector.timesteps,
@@ -84,7 +85,7 @@ class ACAM:
             return output
 
         for i in xrange(len(self.probs)):
-            act_probs = probs[bb]
+            act_probs = self.probs[bb]
             order = np.argsort(act_probs)[::-1]
             cur_actor_id = output['meta']['obj'][i]['tid']
             cur_results = []
@@ -102,4 +103,5 @@ class ACAM:
 
 ''' UNIT TEST '''
 if __name__ == '__main__':
-    # TODO 
+    acam = ACAM()
+    acam.Setup()

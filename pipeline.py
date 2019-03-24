@@ -1,4 +1,4 @@
-from modules.video_reader import VideoReader
+from modules.data_reader import DataReader
 from modules.object_detector_ssd import SSD
 from modules.object_detector_yolo import YOLO
 from modules.tracker_deepsort import DeepSort
@@ -6,8 +6,8 @@ from modules.action_detector_acam import ACAM
 import sys 
 
 # ============ Video Input Modules ============
-video_reader = VideoReader()
-video_reader.Setup(sys.argv[1])
+reader = DataReader()
+reader.Setup(sys.argv[1])
 
 # ============ Object Detection Modules ============
 ssd = SSD()
@@ -33,7 +33,9 @@ action_detector = acam
 
 while(True):
     # Read input
-    frame_data = video_reader.PostProcess()
+    frame_data = reader.PostProcess()
+    if not frame_data:  # end of video 
+        break 
 
     # Obj detection module
     object_detector.PreProcess(frame_data)
@@ -50,4 +52,5 @@ while(True):
     action_detector.Apply()
     action_data = action_detector.PostProcess()
 
-    print(action_data['meta'])
+    if action_data:
+        print(action_data['meta']['obj'])
