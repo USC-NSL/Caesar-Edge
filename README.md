@@ -3,6 +3,7 @@
 ## How to Use
 - Clone this repo to your machine ```git clone --recurse-submodules https://github.com/USC-NSL/Caesar-Edge.git```
 - Download the checkpoint models (see below)
+- Double check the model path in these files to make sure they are same as yours: ```object_detector_yolo(#11-13)```, ```object_detector_ssd(#11)```, ```tracker_deepsort(#10)```, ```action_detection_acam(#12)```
 - Rune ```pipeline.py```
 
 ## Checkpoint Preparation
@@ -27,4 +28,4 @@ One module's output will go to the next one
 - SSD512: 25 FPS
 - YOLOv2: 22 FPS
 - DeepSORT: 49 FPS
-- ACAM: ? FPS/Tube
+- ACAM: 60 FPS/Tube
