@@ -73,8 +73,8 @@ class FeatureExtractor:
             return ouptut
 
         for i in range(len(self.ds_boxes)):
-            output['meta']['obj']['box'] = self.ds_boxes[i]
-            output['meta']['obj']['feature'] = self.features[i]
+            output['meta']['obj'][i]['box'] = self.ds_boxes[i]
+            output['meta']['obj'][i]['feature'] = self.features[i]
             
         return output 
 

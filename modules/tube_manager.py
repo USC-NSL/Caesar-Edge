@@ -39,6 +39,7 @@ Output: {'img': None,
 class TubeManager:
     input = {}
     output_obj = {}
+    can_output = False 
 
 
     def Setup(self):
@@ -64,15 +65,18 @@ class TubeManager:
         self.output_obj['temporal_rois'] = temporal_rois
         self.output_obj['norm_rois'] = norm_rois
         self.output_obj['actor_boxes'] = actor_boxes
-        
+        self.can_output = True 
+
         
     def PostProcess(self):
-        output = self.input 
-        if not self.input or not self.output_obj:
+        if not self.input or not self.can_output:
             return {}
 
+        output = self.input 
         output['img'] = None
         output['meta']['obj'] = self.output_obj
+        self.can_output = False 
+        
         return output
 
 

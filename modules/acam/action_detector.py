@@ -17,6 +17,7 @@ class Action_Detector():
 
         if not session:
             config = tf.ConfigProto()
+            config.gpu_options.per_process_gpu_memory_fraction = 0.5
             config.gpu_options.allow_growth = True
             
             session = tf.Session(graph=self.act_graph, config=config)

@@ -85,6 +85,7 @@ class DeepSort:
 
 ''' UNIT TEST '''
 if __name__ == '__main__':
+    from modules.reid_extractor import FeatureExtractor
     fe = FeatureExtractor()
     fe.Setup()
 
