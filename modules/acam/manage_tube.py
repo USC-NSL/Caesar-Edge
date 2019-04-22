@@ -7,7 +7,7 @@ import collections
 '''
 A class that prepares the tubes frames for action detection
 '''
-class TubeManager:
+class TManager:
 
     def __init__(self, cache_size=32, min_tube_len=16):
         self.cache_size = cache_size
@@ -120,4 +120,4 @@ class TubeManager:
 
 
     def log(self, s):
-        print('[TubeManager] %s' % s)
+        print('[TManager] %s' % s)
