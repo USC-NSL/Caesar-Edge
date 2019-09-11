@@ -1,3 +1,5 @@
+**THIS REPO IS DEPRECATED. PLEASE USE THE [UPDATED VERSION](https://github.com/USC-NSL/Caesar)**
+
 # Caesar-For Edge Computing
 
 ## How to Use
