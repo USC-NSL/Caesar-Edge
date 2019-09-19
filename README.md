@@ -14,6 +14,7 @@ All the NN model files should be put into the "checkpoints/" folder. You can dow
 - [YOLOv2_cfg](https://github.com/pjreddie/darknet/blob/master/cfg/yolov2.cfg), [YOLOv2_weights](https://pjreddie.com/media/files/yolov2.weights)
 - [DeepSORT](https://drive.google.com/open?id=1m2ebLHB2JThZC8vWGDYEKGsevLssSkjo)
 - [ACAM](https://drive.google.com/open?id=138gfVxWs_8LhHiVO03tKpmYBzIaTgD70)
+- [ReID2](https://drive.google.com/file/d/1-2KHQms_RHYIrHwFQg-Vln-NEyhjj5_p/view?usp=sharing)
 
 ## Requirements
 See ```requirements.txt``` for python packages. 
