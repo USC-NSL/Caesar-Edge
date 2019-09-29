@@ -113,8 +113,8 @@ class SSD:
             if self.rclasses[i] != SSD_PEOPLE_LABEL:
                 continue 
             bbox = self.rbboxes[i]
-            p1 = (int(bbox[0] * shape[0]), int(bbox[1] * shape[1]))
-            p2 = (int(bbox[2] * shape[0]), int(bbox[3] * shape[1]))
+            p1 = (int(bbox[0] * shape[1]), int(bbox[1] * shape[0]))
+            p2 = (int(bbox[2] * shape[1]), int(bbox[3] * shape[0]))
             output['meta']['obj'].append({'box':[p1[0],p1[1],p2[0],p2[1]], 'conf': self.rscores[i], 
                                                                             'label':self.rclasses[i]})
         return output 

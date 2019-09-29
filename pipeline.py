@@ -1,6 +1,6 @@
 from modules.data_reader import DataReader
 from modules.object_detector_ssd import SSD
-from modules.object_detector_yolo import YOLO
+# from modules.object_detector_yolo import YOLO
 from modules.reid_extractor import FeatureExtractor
 from modules.tracker_deepsort import DeepSort
 from modules.tube_manager import TubeManager
@@ -15,8 +15,8 @@ reader.Setup(sys.argv[1])
 ssd = SSD()
 ssd.Setup()
 
-yolo = YOLO()
-yolo.Setup()
+# yolo = YOLO()
+# yolo.Setup()
 
 object_detector = ssd
 
